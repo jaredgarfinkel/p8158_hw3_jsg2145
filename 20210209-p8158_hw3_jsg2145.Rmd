@@ -1,0 +1,112 @@
+---
+title: "20210209-p8158_hw3_jsg2145"
+author: "Jared Garfinkel"
+date: "2/9/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(viridis)
+library(psych)
+library(lavaan)
+library(tidySEM)
+knitr::opts_chunk$set(
+	echo = TRUE,
+	warning = FALSE,
+	message = FALSE,
+	fig.width = 8, 
+  fig.height = 6,
+  out.width = "90%"
+)
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+```
+
+# Part 1
+
+```{r}
+1-pchisq(20.15 - 6.62, 2) # 0.0012
+```
+
+```{r}
+data = read_csv("./data/CTN51_SmokerData.csv") %>% 
+  janitor::clean_names() %>% 
+  na_if(".") %>% 
+  select(first, giveup, freq, noday, forbdn, sick)
+
+# head(data)
+# ncol(data)
+# cor(data)
+```
+
+
+```{r}
+df = data %>% 
+  mutate(across(.fns = as.numeric))
+```
+
+# Exploratory Factor Analysis
+
+```{r}
+# pdf("p8158_hw3_efaScree")
+fa2parallel = fa.parallel(df, fa = "fa", nfactors = 2)
+# dev.off()
+# fa2parallel
+```
+
+```{r}
+res1 = fa(df, 1, cor = "poly", rotate = "oblimin", fm = "wls")
+res1
+
+res2 = fa(df, 2, cor = "poly", rotate = "oblimin", fm = "wls")
+res2
+
+res3 = fa(df, 3, cor = "poly", rotate = "oblimin", fm = "wls")
+res3
+```
+
+# Confirmatory Factor Analysis
+
+## 3 factor model
+
+```{r}
+cfa_model3 = ' # measurement model
+                 daytime =~ first + noday + forbdn + sick
+                 morning =~ first + giveup + freq
+               # regressions
+                 daytime ~ morning '
+
+fit3 = cfa(cfa_model3, df, ordered = names(df), std.lv = TRUE)
+summary(fit3, rsquare = TRUE, fit.measures = TRUE)
+```
+
+```{r}
+cfa_model4 = ' # measurement model
+                 daytime =~ first + noday + forbdn + sick
+                 morning =~ giveup + freq'
+
+fit4 = cfa(cfa_model4, df, ordered = names(df), std.lv = TRUE)
+summary(fit4, rsquare = TRUE, fit.measures = TRUE)
+```
+
+## chi-square test
+
+```{r}
+1-pchisq(16.561-10.486, 1) # 0.0137
+```
+
+
+```{r}
+# modindices(fit3, power = TRUE, sort = TRUE)
+```
+
+```{r}
+modindices(fit4, power = TRUE, sort = TRUE)
+```
+
